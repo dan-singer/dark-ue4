@@ -81,10 +81,10 @@ void AMazeGenerator::generateMaze(FVector2D loc)
 	for (int i = 0; i < rawMaze.Num(); ++i) {
 		maze.Add(TArray<FMazeCell>());
 		for (int j = 0; j < rawMaze[i].Num(); ++j) {
-			maze[i].Add({
-				FVector2D(i * cellSize.X, j * cellSize.Y),
-				rawMaze[i][j]
-			});
+			FMazeCell cell;
+			cell.flags = rawMaze[i][j];
+			cell.location = FVector2D(i * cellSize.X, j * cellSize.Y);
+			maze[i].Add(cell);
 		}
 	}
 	// Provide an accessor to elements of said array for blueprints
@@ -139,6 +139,7 @@ FString AMazeGenerator::GetMazeString() {
 
 FMazeCell AMazeGenerator::GetCell(int x, int y)
 {
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *(maze[x][y].location.ToString()));
 	return maze[x][y];
 }
 
