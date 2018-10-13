@@ -2,6 +2,7 @@
 
 #include "MazeGenerator.h"
 #include "Engine/World.h"
+#include "Cell.h"
 
 #define PRINT(x) UE_LOG(LogTemp, Warning, TEXT(x))
 #define PRINT_DEC(x) UE_LOG(LogTemp, Warning, TEXT("%d"), x)
@@ -15,7 +16,7 @@ AMazeGenerator::AMazeGenerator()
 
 }
 
-AMazeGenerator::Direction AMazeGenerator::getOppositeDirection(Direction direction)
+EDirection AMazeGenerator::getOppositeDirection(EDirection direction)
 {
 	switch (direction)
 	{
@@ -37,17 +38,17 @@ AMazeGenerator::Direction AMazeGenerator::getOppositeDirection(Direction directi
 	return North;
 }
 
-TArray<AMazeGenerator::RelativeVec2> AMazeGenerator::getAdjacentCoordinates(const FVector2D & loc)
+TArray<AMazeGenerator::RelativeVec2> AMazeGenerator::getAdjacentCoordinates(const FIntVector& loc)
 {
 	TArray<RelativeVec2> adj;
 	if (loc.X > 0)
-		adj.Add(RelativeVec2{ FVector2D(loc.X - 1, loc.Y), West });
+		adj.Add(RelativeVec2{ FIntVector(loc.X - 1, loc.Y, 0), West });
 	if (loc.X < width - 1)
-		adj.Add(RelativeVec2{ FVector2D(loc.X + 1, loc.Y), East });
+		adj.Add(RelativeVec2{ FIntVector(loc.X + 1, loc.Y, 0), East });
 	if (loc.Y > 0)
-		adj.Add(RelativeVec2{ FVector2D(loc.X, loc.Y - 1), South });
+		adj.Add(RelativeVec2{ FIntVector(loc.X, loc.Y - 1, 0), South });
 	if (loc.Y < height - 1)
-		adj.Add(RelativeVec2{ FVector2D(loc.X, loc.Y + 1), North });
+		adj.Add(RelativeVec2{ FIntVector(loc.X, loc.Y + 1, 0), North });
 	return adj;
 }
 
@@ -58,7 +59,7 @@ void AMazeGenerator::swap(RelativeVec2& first, RelativeVec2& second)
 	second = temp;
 }
 
-void AMazeGenerator::generateMaze(FVector2D loc)
+void AMazeGenerator::generateMaze(FIntVector loc)
 {
 	for (int i = 0; i < width; ++i) {
 		rawMaze.Add(TArray<int>());
@@ -72,10 +73,12 @@ void AMazeGenerator::generateMaze(FVector2D loc)
 		return;
 
 	FVector pos(0, 0, 0);
-	AActor* actor = GetWorld()->SpawnActor(*CellClass, &pos);
+	AActor* refCell = GetWorld()->SpawnActor(*CellClass, &pos);
 	
-	FBox box = actor->GetComponentsBoundingBox();
+	FBox box = refCell->GetComponentsBoundingBox();
 	FVector cellSize = box.GetSize();
+
+	refCell->Destroy();
 	
 	// Generate a 2d array of {FVector position, int openFlags}  
 	for (int i = 0; i < rawMaze.Num(); ++i) {
@@ -83,16 +86,34 @@ void AMazeGenerator::generateMaze(FVector2D loc)
 		for (int j = 0; j < rawMaze[i].Num(); ++j) {
 			FMazeCell cell;
 			cell.flags = rawMaze[i][j];
-			cell.location = FVector2D(i * cellSize.X, j * cellSize.Y);
+
+			cell.location = FVector(i * cellSize.X, j * cellSize.Y, 0);
 			maze[i].Add(cell);
+
+			ACell* spawnedCell = (ACell*)GetWorld()->SpawnActor(*CellClass, &cell.location);
+			if (!spawnedCell)
+				return;
+
+
+			// We don't destroy the cooresponding walls, but rather the wall 90 degrees cw from it
+			// This is to account for rotating axes between y being up to UE4's X being forward
+			if (cell.flags & North) {
+				spawnedCell->Right->DestroyComponent();
+			}
+			if (cell.flags & South) {
+				spawnedCell->Left->DestroyComponent();
+			}
+			if (cell.flags & East) {
+				spawnedCell->Front->DestroyComponent();
+			}
+			if (cell.flags & West) {
+				spawnedCell->Back->DestroyComponent();
+			}
 		}
 	}
-	// Provide an accessor to elements of said array for blueprints
-	// Loop through array and spawn cells
-	// Remove walls based on flags
 }
 
-void AMazeGenerator::generateMazeRec(FVector2D loc)
+void AMazeGenerator::generateMazeRec(FIntVector loc)
 {
 	visited.Add(loc);
 	auto coords = getAdjacentCoordinates(loc);
@@ -105,8 +126,8 @@ void AMazeGenerator::generateMazeRec(FVector2D loc)
 
 	for (const RelativeVec2& adjacentLoc : coords) {
 		if (!visited.Contains(adjacentLoc.vec)) {
-			rawMaze[(int)loc.X][(int)loc.Y] |= adjacentLoc.direction;
-			rawMaze[(int)adjacentLoc.vec.X][(int)adjacentLoc.vec.Y] |= getOppositeDirection(adjacentLoc.direction);
+			rawMaze[loc.X][loc.Y] |= adjacentLoc.direction;
+			rawMaze[adjacentLoc.vec.X][adjacentLoc.vec.Y] |= getOppositeDirection(adjacentLoc.direction);
 			generateMazeRec(adjacentLoc.vec);
 		}
 	}

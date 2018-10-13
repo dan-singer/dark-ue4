@@ -17,11 +17,19 @@ struct FMazeCell {
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector2D location;
+	FVector location;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int flags;
 };
 
+
+UENUM(BlueprintType)
+enum EDirection {
+	North = 1,
+	South = 2,
+	East  = 4,
+	West = 8
+};
 
 UCLASS()
 class DARK_API AMazeGenerator : public AActor
@@ -34,16 +42,11 @@ public:
 	AMazeGenerator();
 
 
-	enum Direction {
-		North = 1,
-		South = 2,
-		East = 4,
-		West = 8
-	};
+
 
 	struct RelativeVec2 {
-		FVector2D vec;
-		Direction direction;
+		FIntVector vec;
+		EDirection direction;
 	};
 
 
@@ -51,16 +54,16 @@ public:
 private:
 
 	TArray<TArray<int>> rawMaze;
-	TSet<FVector2D> visited;
+	TSet<FIntVector> visited;
 
 
-	Direction getOppositeDirection(Direction direction);
-	TArray<RelativeVec2> getAdjacentCoordinates(const FVector2D& loc);
+	EDirection getOppositeDirection(EDirection direction);
+	TArray<RelativeVec2> getAdjacentCoordinates(const FIntVector& loc);
 	void swap(RelativeVec2& first, RelativeVec2& second);
 
 
 
-	void generateMazeRec(FVector2D loc);
+	void generateMazeRec(FIntVector loc);
 
 protected:
 
@@ -70,9 +73,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int height = 10;
 
-	UPROPERTY(EditAnywhere)
-	FVector2D realWorldMultiplier;
-
 	TArray<TArray<FMazeCell>> maze;
 
 
@@ -80,7 +80,7 @@ protected:
 	TSubclassOf<class AActor> CellClass;
 
 	UFUNCTION(BlueprintCallable)
-	void generateMaze(FVector2D loc);
+	void generateMaze(FIntVector loc);
 
 	UFUNCTION(BlueprintCallable)
 	FString GetMazeString();
