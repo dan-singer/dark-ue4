@@ -10,18 +10,6 @@
 
 
 
-USTRUCT(BlueprintType)
-struct FMazeCell {
-
-
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector location;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int flags;
-};
-
 
 UENUM(BlueprintType)
 enum EDirection {
@@ -41,29 +29,28 @@ public:
 	// Sets default values for this actor's properties
 	AMazeGenerator();
 
-
-
-
+protected:
+	// Structure containing an FIntVector and an enum representing which direction the next cell is relative to the current one.
 	struct RelativeVec2 {
 		FIntVector vec;
 		EDirection direction;
 	};
-
-
 	
 private:
 
-	TArray<TArray<int>> rawMaze;
+	// Matrix of integers representing which sides of the cell are open via a bitflag. See EDirection
+	TArray<TArray<int>> mazeData;
+	// Used for the depth-first traversal
 	TSet<FIntVector> visited;
 
 
 	EDirection getOppositeDirection(EDirection direction);
 	TArray<RelativeVec2> getAdjacentCoordinates(const FIntVector& loc);
 	void swap(RelativeVec2& first, RelativeVec2& second);
-
-
-
+	// DFS maze generation implementation
 	void generateMazeRec(FIntVector loc);
+	// Actually spawns the cells in the game world
+	void spawnMazeCells();
 
 protected:
 
@@ -73,20 +60,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int height = 10;
 
-	TArray<TArray<FMazeCell>> maze;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<class AActor> CellClass;
 
 	UFUNCTION(BlueprintCallable)
 	void generateMaze(FIntVector loc);
-
-	UFUNCTION(BlueprintCallable)
-	FString GetMazeString();
-
-	UFUNCTION(BlueprintCallable)
-	FMazeCell GetCell(int x, int y);
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

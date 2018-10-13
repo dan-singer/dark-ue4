@@ -62,55 +62,13 @@ void AMazeGenerator::swap(RelativeVec2& first, RelativeVec2& second)
 void AMazeGenerator::generateMaze(FIntVector loc)
 {
 	for (int i = 0; i < width; ++i) {
-		rawMaze.Add(TArray<int>());
+		mazeData.Add(TArray<int>());
 		for (int j = 0; j < height; ++j) {
-			rawMaze[i].Add(0);
+			mazeData[i].Add(0);
 		}
 	}
 	generateMazeRec(loc);
-
-	if (!CellClass)
-		return;
-
-	FVector pos(0, 0, 0);
-	AActor* refCell = GetWorld()->SpawnActor(*CellClass, &pos);
-	
-	FBox box = refCell->GetComponentsBoundingBox();
-	FVector cellSize = box.GetSize();
-
-	refCell->Destroy();
-	
-	// Generate a 2d array of {FVector position, int openFlags}  
-	for (int i = 0; i < rawMaze.Num(); ++i) {
-		maze.Add(TArray<FMazeCell>());
-		for (int j = 0; j < rawMaze[i].Num(); ++j) {
-			FMazeCell cell;
-			cell.flags = rawMaze[i][j];
-
-			cell.location = FVector(i * cellSize.X, j * cellSize.Y, 0);
-			maze[i].Add(cell);
-
-			ACell* spawnedCell = (ACell*)GetWorld()->SpawnActor(*CellClass, &cell.location);
-			if (!spawnedCell)
-				return;
-
-
-			// We don't destroy the cooresponding walls, but rather the wall 90 degrees cw from it
-			// This is to account for rotating axes between y being up to UE4's X being forward
-			if (cell.flags & North) {
-				spawnedCell->Right->DestroyComponent();
-			}
-			if (cell.flags & South) {
-				spawnedCell->Left->DestroyComponent();
-			}
-			if (cell.flags & East) {
-				spawnedCell->Front->DestroyComponent();
-			}
-			if (cell.flags & West) {
-				spawnedCell->Back->DestroyComponent();
-			}
-		}
-	}
+	spawnMazeCells();
 }
 
 void AMazeGenerator::generateMazeRec(FIntVector loc)
@@ -126,42 +84,56 @@ void AMazeGenerator::generateMazeRec(FIntVector loc)
 
 	for (const RelativeVec2& adjacentLoc : coords) {
 		if (!visited.Contains(adjacentLoc.vec)) {
-			rawMaze[loc.X][loc.Y] |= adjacentLoc.direction;
-			rawMaze[adjacentLoc.vec.X][adjacentLoc.vec.Y] |= getOppositeDirection(adjacentLoc.direction);
+			mazeData[loc.X][loc.Y] |= adjacentLoc.direction;
+			mazeData[adjacentLoc.vec.X][adjacentLoc.vec.Y] |= getOppositeDirection(adjacentLoc.direction);
 			generateMazeRec(adjacentLoc.vec);
 		}
 	}
 }
 
-FString AMazeGenerator::GetMazeString() {
-	FString str;
-	for (int y = height - 1; y >= 0; --y) {
-		for (int x = 0; x < width; ++x) {
-			int cell = rawMaze[x][y];
-			str += "[";
-			if (cell & North) {
-				str += "N";
+void AMazeGenerator::spawnMazeCells()
+{
+	if (!CellClass)
+		return;
+
+	FVector pos(0, 0, 0);
+	AActor* refCell = GetWorld()->SpawnActor(*CellClass, &pos);
+
+	FBox box = refCell->GetComponentsBoundingBox();
+	FVector cellSize = box.GetSize();
+
+	refCell->Destroy();
+
+	// Generate a 2d array of {FVector position, int openFlags}  
+	for (int i = 0; i < mazeData.Num(); ++i) {
+		for (int j = 0; j < mazeData[i].Num(); ++j) {
+
+			int flags = mazeData[i][j];
+			FVector location(i * cellSize.X, j * cellSize.Y, 0);
+
+			ACell* spawnedCell = (ACell*)GetWorld()->SpawnActor(*CellClass, &location);
+			if (!spawnedCell)
+				return;
+
+
+			// We don't destroy the cooresponding walls, but rather the wall 90 degrees cw from it
+			// This is to account for rotating axes between Y being up to UE4's X being forward
+			if (flags & North) {
+				spawnedCell->Right->DestroyComponent();
 			}
-			if (cell & South) {
-				str += "S";
+			if (flags & South) {
+				spawnedCell->Left->DestroyComponent();
 			}
-			if (cell & East) {
-				str += "E";
+			if (flags & East) {
+				spawnedCell->Front->DestroyComponent();
 			}
-			if (cell & West) {
-				str += "W";
+			if (flags & West) {
+				spawnedCell->Back->DestroyComponent();
 			}
-			str += "] ";
 		}
-		str += "\n";
 	}
-	return str;
 }
 
-FMazeCell AMazeGenerator::GetCell(int x, int y)
-{
-	return maze[x][y];
-}
 
 // Called when the game starts or when spawned
 void AMazeGenerator::BeginPlay()
