@@ -139,7 +139,6 @@ FString AMazeGenerator::GetMazeString() {
 
 FMazeCell AMazeGenerator::GetCell(int x, int y)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *(maze[x][y].location.ToString()));
 	return maze[x][y];
 }
 
