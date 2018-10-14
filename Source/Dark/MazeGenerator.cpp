@@ -16,7 +16,7 @@ AMazeGenerator::AMazeGenerator()
 
 }
 
-EDirection AMazeGenerator::getOppositeDirection(EDirection direction)
+AMazeGenerator::EDirection AMazeGenerator::getOppositeDirection(AMazeGenerator::EDirection direction)
 {
 	switch (direction)
 	{
@@ -68,7 +68,9 @@ void AMazeGenerator::generateMaze(FIntVector loc)
 		}
 	}
 	generateMazeRec(loc);
-	spawnMazeCells();
+	if (spawnMazeCells()) {
+		OnMazeGenerated.Broadcast();
+	}
 }
 
 void AMazeGenerator::generateMazeRec(FIntVector loc)
@@ -91,10 +93,12 @@ void AMazeGenerator::generateMazeRec(FIntVector loc)
 	}
 }
 
-void AMazeGenerator::spawnMazeCells()
+bool AMazeGenerator::spawnMazeCells()
 {
-	if (!CellClass)
-		return;
+	if (!CellClass) {
+		PRINT("No cell class has been assigned");
+		return false;
+	}
 
 	FVector pos(0, 0, 0);
 	AActor* refCell = GetWorld()->SpawnActor(*CellClass, &pos);
@@ -112,8 +116,10 @@ void AMazeGenerator::spawnMazeCells()
 			FVector location(i * cellSize.X, j * cellSize.Y, 0);
 
 			ACell* spawnedCell = (ACell*)GetWorld()->SpawnActor(*CellClass, &location);
-			if (!spawnedCell)
-				return;
+			if (!spawnedCell) {
+				PRINT("Unable to spawn a maze cell");
+				return false;
+			}
 
 
 			// We don't destroy the cooresponding walls, but rather the wall 90 degrees cw from it
@@ -132,6 +138,7 @@ void AMazeGenerator::spawnMazeCells()
 			}
 		}
 	}
+	return true;
 }
 
 
