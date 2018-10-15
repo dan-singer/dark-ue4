@@ -9,8 +9,7 @@
 #include "MazeGenerator.generated.h"
 
 
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMazeGenerated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMazeDelegate);
 
 UCLASS()
 class DARK_API AMazeGenerator : public AActor
@@ -24,8 +23,9 @@ public:
 	// Sets default values for this actor's properties
 	AMazeGenerator();
 
-	UPROPERTY(BlueprintReadWrite, BlueprintCallable, BlueprintAssignable)
-	FMazeGenerated OnMazeGenerated;
+	UPROPERTY(BlueprintAssignable)
+	FMazeDelegate OnMazeGenerated;
+
 
 protected:
 
