@@ -136,6 +136,7 @@ bool AMazeGenerator::spawnMazeCells()
 			if (flags & West) {
 				spawnedCell->Back->DestroyComponent();
 			}
+			spawnedCell->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
 		}
 	}
 	return true;
