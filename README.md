@@ -9,4 +9,4 @@ The primary purpose of this project is demonstrate random maze generation in UE4
 ![Maze](media/dark-maze.jpg)
 
 ## Goal
-The goal of this game is reach the cone of light and escape darkness before the darkness consumes you.
+The goal of this game is reach the cone of light and escape darkness before it consumes you.
