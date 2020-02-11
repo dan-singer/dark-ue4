@@ -22,20 +22,15 @@ AMazeGenerator::EDirection AMazeGenerator::getOppositeDirection(AMazeGenerator::
 	{
 		case North:
 			return South;
-			break;
 		case South:
 			return North;
-			break;
 		case East:
 			return West;
-			break;
 		case West:
 			return East;
-			break;
 		default:
-			break;
+			return North;
 	}
-	return North;
 }
 
 TArray<AMazeGenerator::RelativeVec2> AMazeGenerator::getAdjacentCoordinates(const FIntVector& loc)
